@@ -8,7 +8,9 @@ import logging
 import sqlite3
 from datetime import datetime
 from pathlib import Path
+import webbrowser
 import pandas as pd
+from PIL import Image, ImageDraw, ImageOps, ImageTk
 
 logger = logging.getLogger(__name__)
 
@@ -352,10 +354,11 @@ class FileScannerGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Python File Scanner GUI")
-        self.root.geometry("800x650")
+        self.root.geometry("800x800")
 
         self.db_path = get_db_path()
         self.log_queue = queue.Queue()
+        self.about_images: dict[tk.Toplevel, ImageTk.PhotoImage] = {}
 
         # Route application logging to the GUI instead of the terminal.
         self.root_logger = logging.getLogger()
@@ -450,7 +453,7 @@ class FileScannerGUI:
             state='disabled',
             background="#f0f0f0",
             foreground="black",
-            font=("Consolas", 9),
+            font=("Consolas", 12),
         )
         self.log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -460,16 +463,103 @@ class FileScannerGUI:
 
         footer = ttk.Frame(main_frame)
         footer.pack(fill=tk.X, pady=(5, 0))
+        ttk.Button(footer, text="Quit", command=self._on_close).pack(
+            side=tk.LEFT
+        )
         ttk.Button(footer, text="About", command=self._show_about).pack(
             side=tk.RIGHT
         )
 
     def _show_about(self):
-        messagebox.showinfo(
-            "About",
-            "Created By:  Daniel Morvay,\nGitHub Account:  https://github.com/morvayd/",
-            parent=self.root,
+        image_path = Path(__file__).resolve().parent / "Picture" / "14187194.png"
+        try:
+            with Image.open(image_path) as source:
+                about_image = ImageOps.fit(
+                    source.convert("RGBA"),
+                    (288, 288),
+                    method=Image.Resampling.LANCZOS,
+                )
+            circular_mask = Image.new("L", (288, 288), 0)
+            ImageDraw.Draw(circular_mask).ellipse((0, 0, 287, 287), fill=255)
+            about_image.putalpha(circular_mask)
+            about_image = about_image.resize((72, 72), Image.Resampling.LANCZOS)
+        except OSError as error:
+            messagebox.showerror(
+                "About Image Error",
+                f"Could not load the About image at {image_path}:\n{error}",
+                parent=self.root,
+            )
+            return
+
+        # Create a custom popup window
+        about_window = tk.Toplevel(self.root)
+        self.about_images[about_window] = ImageTk.PhotoImage(
+            about_image, master=about_window
         )
+        about_window.bind(
+            "<Destroy>",
+            lambda event: self.about_images.pop(about_window, None)
+            if event.widget is about_window
+            else None,
+            add="+",
+        )
+        about_window.title("About")
+        about_window.geometry("360x150")
+        about_window.resizable(False, False)
+        about_window.configure(bg="#2f3136")
+
+        content_frame = tk.Frame(about_window, bg="#2f3136", padx=20, pady=15)
+        content_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Circular profile photo on the left, centered vertically
+        image_label = tk.Label(
+            content_frame,
+            image=self.about_images[about_window],
+            bg="#2f3136",
+            borderwidth=0,
+        )
+        image_label.pack(side=tk.LEFT, padx=(0, 18), pady=(8, 28))
+
+        text_frame = tk.Frame(content_frame, bg="#2f3136")
+        text_frame.pack(side=tk.LEFT, expand=True, fill=tk.Y)
+
+        # Main text
+        label = tk.Label(
+            text_frame,
+            text="Created By: Daniel Morvay",
+            justify=tk.LEFT,
+            anchor="w",
+            bg="#2f3136",
+            fg="white",
+            pady=10,
+            font=("TkDefaultFont", 12),
+        )
+        label.pack(fill=tk.X)
+
+        # Hyperlink text
+        url = "https://github.com/morvayd/"
+        link_label = tk.Label(
+            text_frame,
+            text="GitHub Account",
+            fg="#6ea9ff",
+            bg="#2f3136",
+            cursor="hand2",
+            font=("TkDefaultFont", 12, "underline"),
+            activeforeground="#9dc1ff",
+            justify=tk.LEFT,
+            anchor="w",
+        )
+        link_label.pack(fill=tk.X)
+
+        # Bind the click event to open the URL
+        link_label.bind("<Button-1>", lambda e: webbrowser.open(url))
+
+        # Close button
+        ttk.Button(
+            text_frame,
+            text="Close",
+            command=about_window.destroy,
+        ).pack(anchor=tk.W, pady=(16, 0))
 
     def _browse_folder(self):
         folder = filedialog.askdirectory()

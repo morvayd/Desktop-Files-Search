@@ -12,8 +12,10 @@ Standard OS search often struggles with typos or partial filenames. This tool so
 ### Key Capabilities
 *   **Intelligent Indexing:** Recursively scans folders and builds a comprehensive metadata database.
 *   **Fuzzy Search:** Uses `rapidfuzz` (WRatio) to find files even when your search terms are imperfect.
-4.  **Robust Data Management:** Uses a "staging" architecture to ensure your search index is never corrupted by an interrupted scan.
-5.  **Dual-Interface:** Includes a user-friendly **Scanner GUI** for managing folders and a high-performance **Search GUI** for exploring results.
+*   **Robust Data Management:** Uses a "staging" architecture to ensure your search index is not replaced by an incomplete scan.
+*   **Dual-Interface:** Includes a user-friendly **Scanner GUI** for managing folders and a high-performance **Search GUI** for exploring results.
+*   **Path Filtering and Navigation:** Exclude terms from search results, page through matches, and open a selected file's containing folder.
+*   **Image-Based About Dialogs:** Both applications display the author and a clickable GitHub link alongside a circular profile image.
 
 ---
 
@@ -23,7 +25,7 @@ Standard OS search often struggles with typos or partial filenames. This tool so
 - **Python 3.x**
 - **External Libraries**: 
   ```bash
-  python -m pip install pandas rapidfuzz
+  python -m pip install pandas rapidfuzz Pillow
   ```
   *(Note: On some Linux distributions, you may need to install `python3-tk` separately.)*
 
@@ -36,6 +38,8 @@ python file_scanner_gui.py
 2.  **Save:** Click **Save Changes to DB** to persist your configuration.
 3.  **Scan:** Click **Run Scan**. The app will recursively index your files.
     *   *Note: Scanning large drives (like `C:\` or `/`) can take time and significant disk space.*
+4.  **Quit or About:** Use **Quit** to close the scanner, or **About** to view the author and GitHub link.
+5.  **Monitor:** Scan messages and errors appear in the **Console Output** area.
 
 ### Step 2: Searching
 Once the scan is complete, run the **Search GUI**:
@@ -45,6 +49,12 @@ python fuzzy_search_gui.py
 1.  **Query:** Type your search term and press **Enter**.
 2.  **Refine:** Use the **Exclude terms** box to omit specific file types (e.g., exclude `png` to hide all images).
 3.  **Navigate:** Use the pagination controls to browse through matches.
+4.  **Open Folder:** Select a result and click **Open Folder** to open its containing folder (or the selected path itself when it is a directory).
+5.  **View Full Path:** Select a result to show its full path in a popup next to the row.
+6.  **Quit or About:** Use **Quit** to close the search app, or **About** to view the author and GitHub link.
+
+### About Dialog
+Both GUIs use the same custom About dialog: a dark 360-by-150-pixel window with the author line, clickable soft-blue **GitHub Account** link, and **Close** button. A 72-by-72 circular crop of `Picture/14187194.png` appears at the left. The image is loaded relative to the application script; if it is missing or unreadable, the app reports the failure in an error dialog. The crop and display are provided by Pillow.
 
 ---
 
@@ -79,6 +89,8 @@ The search engine uses the **WRatio** scorer from `rapidfuzz`. This allows for a
 │   └── 0002-fuzzy-search-architecture.md
 ├── file_scanner_gui.py   # Main Scanner interface & engine
 ├── fuzzy_search_gui.py   # Main Search interface
+├── Picture/
+│   └── 14187194.png      # Source photo cropped for both About dialogs
 └── SQLite/
     └── SearchDB.sqlite   # Local runtime database
 ```
