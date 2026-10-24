@@ -77,7 +77,9 @@ Both scan-result tables use the following columns:
 - Scans run on a background thread. The GUI disables folder-management and scan controls during the scan, then re-enables them and reloads the displayed roots when the worker completes.
 - The GUI routes Python logging records and scan `stdout`/`stderr` to its Console Output widget through a thread-safe queue.
 - Scan completion is reported with a success or failure dialog based on whether the scan call raises an exception. Missing roots fail the scan; inaccessible directories are recorded while the rest of the scan proceeds.
-- An **About** button opens a dialog showing `Created By:  Daniel Morvay,` and `GitHub Account:  https://github.com/morvayd/`.
+- The initial window is 800 by 800 pixels. Console Output uses 12-point Consolas text.
+- The footer provides **Quit** and **About** buttons. **Quit** uses the normal window-close handler to restore the previous root logger configuration before exiting.
+- **About** opens a custom 360-by-150-pixel dark dialog with the author name, a soft-blue clickable GitHub Account link, and a **Close** button. It displays a 72-by-72 circular crop of `Picture/14187194.png` on the left; Pillow is used to crop and render the image. If the image cannot be loaded, an error dialog identifies the path and load failure.
 
 ## Consequences
 
@@ -87,10 +89,12 @@ Both scan-result tables use the following columns:
 - Empty directories are retained separately from the main file/non-empty-directory index.
 - Staging prevents an incomplete scan from replacing the previous completed index.
 - Recursive traversal uses Python's standard library and works across supported operating systems.
+- The scanner provides an image-based About dialog and a Quit action that preserves logging cleanup.
 
 ### Negative / risks
 - Scanning large roots can take substantial time and produce a large database.
 - `pandas` remains an external runtime dependency.
+- `Pillow` is required to crop and display the About dialog image.
 - `journal_mode=MEMORY` has weaker recovery guarantees for interrupted writes than a durable disk-backed journal.
 - SQLite remains a single-writer database; concurrent scanner processes are not supported by this workflow.
 - Symbolic-link directories are not followed by the current traversal and are not recorded as directory rows.
