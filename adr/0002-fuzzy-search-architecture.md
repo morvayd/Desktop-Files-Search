@@ -20,14 +20,14 @@ The fuzzy-search tool ranks paths from the index produced by the file-scanner GU
 - Provide a search query field, an **Exclude terms** field, a **Search** button, and a **Reset** button.
 - Show the total `ScanFolders` row count in the search controls.
 - Display results in a selectable, two-column Treeview, 20 records per page.
-- Allow one result to be selected at a time and provide an **Open Folder** button that opens the selected path when it is a directory, or its containing folder when it is a file.
+- Allow one result to be selected at a time and provide an **Open Folder** button that opens the selected path when it is a directory, or its containing folder when it is a file. Interpret indexed paths with `pathlib.Path` and use the platform's native folder-opening mechanism: `os.startfile` on Windows, `open` on macOS, and `xdg-open` on Linux. Report unsupported platforms and launch failures in an error dialog.
 - Selecting a result displays a path popup next to its row. The popup is positioned about 66 pixels from the Treeview's left edge and is moved left if needed to stay on-screen; it is hidden when the selection is cleared or the results page changes.
 - Provide **First**, **Previous**, **Next**, and **Last** navigation. The range indicator reports the visible one-based range and total, including a shorter final page.
 - **Reset** clears both input fields, displayed results, status text, and pagination state.
 - Pressing Enter in either input field starts a search; an empty query produces a warning.
 - Disable the query/exclusion fields and **Search**/**Reset** buttons while a search is running; page controls are updated for the cleared result list.
 - Show searching and no-match status text; surface database or other search errors in the status area. A valid empty `ScanFolders` table has a record count of zero and produces a no-indexed-data status.
-- Use a 700-by-730 initial window size and request enough Treeview height for 20 result rows.
+- Use a 700-by-730 initial window size on Windows and macOS, and 700-by-800 on Linux. Request enough Treeview height for 20 result rows.
 - Provide **Quit** and **About** buttons in the footer. **Quit** closes the root window.
 - **About** opens a custom 360-by-150-pixel dark dialog with the author name, soft-blue clickable GitHub Account link, and **Close** button. A 72-by-72 circular crop of `Picture/14187194.png` appears on the left. Pillow is used to crop and render the image; a load failure is reported in an error dialog.
 
@@ -47,6 +47,7 @@ The fuzzy-search tool ranks paths from the index produced by the file-scanner GU
 - `file_scanner_gui.py` owns scan-root management, scanning, and index creation.
 - The applications are decoupled at runtime and exchange data through `SQLite/SearchDB.sqlite`.
 - The search tool performs fuzzy matching over path-derived text, not semantic or full-content search.
+- The scanner and search GUI use OS-native path handling; the search GUI dispatches folder opening according to the host OS rather than assuming one path or launcher convention.
 
 ## Data flow
 1. On startup, validate the database path and `ScanFolders` table, then count its rows.

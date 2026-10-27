@@ -44,7 +44,7 @@ Both scan-result tables use the following columns:
 | `FilePath` | Parent directory path. |
 | `FileName` | File or directory name. |
 | `CompleteFile` | Complete file or directory path. |
-| `corpus` | Search text derived from `CompleteFile` by replacing `/`, hyphens, and periods with spaces. File rows also replace underscores with spaces. |
+| `corpus` | Search text derived from `CompleteFile` by replacing the native and alternate OS path separators, hyphens, and periods with spaces. File rows also replace underscores with spaces. |
 | `IsDirectory` | `0` for file rows; `1` for directory rows. |
 | `Extension` | Lowercase file extension; empty for directories. |
 | `Size` | File size or directory metadata size in bytes. |
@@ -55,8 +55,10 @@ Both scan-result tables use the following columns:
 `UnableToScan` contains `ScanRoot`, `DirectoryPath`, `Error`, and `ScanTime` columns for directories that could not be traversed or stat'ed.
 
 ### 6. Path and default-root handling
-- `pathlib.Path` is used to locate the script directory, create the database directory, and resolve the user's home directory.
-- On first initialization, if `FoldersToScan` is empty, the scanner adds `Path.home() / "Documents"` as the default root on Windows, macOS, and Linux.
+- `pathlib.Path` and `os.path` are used for filesystem paths so path construction and traversal follow the running operating system's conventions.
+- On first initialization, if `FoldersToScan` is empty, the scanner adds the current user's `Documents` directory (`Path.home() / "Documents"`) as the default root on Windows, macOS, and Linux.
+- Search corpus normalization replaces both the native path separator and any alternate separator reported by the OS, so indexed paths remain searchable across Windows, macOS, and Linux. File rows additionally replace underscores with spaces.
+- The Browse button uses the native folder picker on all platforms. On Windows only, its returned path is normalized with `PureWindowsPath` so drive roots and folder separators are stored in Windows form (for example, `C:\`).
 - Users can add additional roots in `FoldersToScan`; all configured roots are scanned in one run before the live index tables are replaced.
 - File `CompleteFile` values are assembled by joining the walked root and filename. Directory paths come from `os.walk`.
 
@@ -93,9 +95,10 @@ Both scan-result tables use the following columns:
 
 ### Negative / risks
 - Scanning large roots can take substantial time and produce a large database.
+- The default `Documents` location assumes that directory exists under the user's home directory; users can configure a different root when needed.
 - `pandas` remains an external runtime dependency.
 - `Pillow` is required to crop and display the About dialog image.
 - `journal_mode=MEMORY` has weaker recovery guarantees for interrupted writes than a durable disk-backed journal.
 - SQLite remains a single-writer database; concurrent scanner processes are not supported by this workflow.
 - Symbolic-link directories are not followed by the current traversal and are not recorded as directory rows.
-- `corpus` normalization currently differs slightly between file and directory records: file paths also replace underscores, while directory paths do not.
+- `corpus` normalization differs slightly between file and directory records: file rows also replace underscores, while directory rows do not.
