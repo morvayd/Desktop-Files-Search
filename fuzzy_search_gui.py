@@ -1,6 +1,10 @@
 # Created by Daniel Morvay
 # GitHub URL: https://github.com/morvayd/
+
 # This application provides a graphical user interface for performing fuzzy searches on files stored in a SQLite database.
+
+# Debian/Ubuntu system Python may need Tkinter and Pillow's Tk support:
+#   sudo apt install python3-tk python3-pil.imagetk
 
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -153,8 +157,10 @@ class FuzzySearchGUI:
         self.root = root
         self.title_str = "Fuzzy Search Research Tool GUI"
         self.root.title(self.title_str)
-        #  .geometry("<width>x<height>")
-        self.root.geometry("700x730")
+        if sys.platform.startswith("linux"):
+            self.root.geometry("700x800")
+        else:
+            self.root.geometry("700x730")
 
         self.db_path = db_path
         self.record_count = record_count
@@ -418,15 +424,32 @@ class FuzzySearchGUI:
             return
 
         folder_path = result_path if result_path.is_dir() else result_path.parent
-        if sys.platform == "darwin":
+        if sys.platform == "win32":
+            open_folder = getattr(os, "startfile", None)
+            if open_folder is None:
+                messagebox.showerror(
+                    "Could Not Open Folder",
+                    "Windows folder opening is unavailable in this environment.",
+                    parent=self.root,
+                )
+                return
+        elif sys.platform == "darwin":
             command = ["open", str(folder_path)]
-        elif os.name == "nt":
-            command = ["explorer", str(folder_path)]
-        else:
+        elif sys.platform.startswith("linux"):
             command = ["xdg-open", str(folder_path)]
+        else:
+            messagebox.showerror(
+                "Could Not Open Folder",
+                f"Opening folders is not supported on {sys.platform}.",
+                parent=self.root,
+            )
+            return
 
         try:
-            subprocess.Popen(command)
+            if sys.platform == "win32":
+                open_folder(str(folder_path))
+            else:
+                subprocess.Popen(command)
         except OSError as error:
             messagebox.showerror(
                 "Could Not Open Folder",

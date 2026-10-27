@@ -5,6 +5,8 @@
 
 **Python Local Search** is a lightweight, dual-interface desktop tool designed to transform your local files into a searchable database. Through a simple two-step process—**Scan, then Search**—you can perform high-speed, fuzzy-matched queries across your entire hard drive.
 
+**Supported platforms:** Windows, macOS, and Linux. The interface sizing, path handling, and folder-opening behavior adapt to the operating system.
+
 ## 🚀 Overview
 
 Standard OS search often struggles with typos or partial filenames. This tool solves that by building a local index of your file metadata using SQLite. Once indexed, you can perform "fuzzy" searches, allowing for typos (e.g., searching for "budjet" to find "budget") using advanced string-matching algorithms.
@@ -14,7 +16,8 @@ Standard OS search often struggles with typos or partial filenames. This tool so
 *   **Fuzzy Search:** Uses `rapidfuzz` (WRatio) to find files even when your search terms are imperfect.
 *   **Robust Data Management:** Uses a "staging" architecture to ensure your search index is not replaced by an incomplete scan.
 *   **Dual-Interface:** Includes a user-friendly **Scanner GUI** for managing folders and a high-performance **Search GUI** for exploring results.
-*   **Path Filtering and Navigation:** Exclude terms from search results, page through matches, and open a selected file's containing folder.
+*   **Path Filtering and Navigation:** Exclude terms from search results, page through matches, and open the selected directory or a file's containing folder using the host operating system's native folder opener.
+*   **Cross-Platform Paths:** Scanner paths follow the running OS conventions, and indexed search text normalizes native and alternate path separators for Windows, macOS, and Linux.
 *   **Image-Based About Dialogs:** Both applications display the author and a clickable GitHub link alongside a circular profile image.
 
 ---
@@ -23,18 +26,22 @@ Standard OS search often struggles with typos or partial filenames. This tool so
 
 ### Prerequisites
 - **Python 3.x**
-- **External Libraries**: 
+- **External Libraries**:
   ```bash
-  python -m pip install pandas rapidfuzz Pillow
+  python -m pip install -r requirements.txt
   ```
-  *(Note: On some Linux distributions, you may need to install `python3-tk` separately.)*
+  On Debian or Ubuntu, install Tkinter and Pillow's Tk support if they are missing:
+  ```bash
+  sudo apt update
+  sudo apt install python3-tk python3-pil.imagetk
+  ```
 
 ### Step 1: Indexing (The Scan)
 Run the **Scanner GUI** to build your search database:
 ```bash
 python file_scanner_gui.py
 ```
-1.  **Configure:** Add the folders you want to search (e.g., your `Documents` or `Work` folders).
+1.  **Configure:** Add the folders you want to search (e.g., your `Documents` or `Work` folders). If no folders are configured on first launch, the scanner defaults to the current user's `Documents` directory (`~/Documents`). The Browse button uses your OS folder picker; on Windows, selected paths are normalized to Windows format (for example, `C:\` for a drive root).
 2.  **Save:** Click **Save Changes to DB** to persist your configuration.
 3.  **Scan:** Click **Run Scan**. The app will recursively index your files.
     *   *Note: Scanning large drives (like `C:\` or `/`) can take time and significant disk space.*
@@ -49,9 +56,11 @@ python fuzzy_search_gui.py
 1.  **Query:** Type your search term and press **Enter**.
 2.  **Refine:** Use the **Exclude terms** box to omit specific file types (e.g., exclude `png` to hide all images).
 3.  **Navigate:** Use the pagination controls to browse through matches.
-4.  **Open Folder:** Select a result and click **Open Folder** to open its containing folder (or the selected path itself when it is a directory).
+4.  **Open Folder:** Select a result and click **Open Folder** to open its containing folder (or the selected path itself when it is a directory). The app uses Windows' native folder opener, `open` on macOS, and `xdg-open` on Linux. Missing paths or launch failures are reported in an error dialog.
 5.  **View Full Path:** Select a result to show its full path in a popup next to the row.
 6.  **Quit or About:** Use **Quit** to close the search app, or **About** to view the author and GitHub link.
+
+The Search GUI opens at 700-by-730 pixels on Windows and macOS, and 700-by-800 pixels on Linux.
 
 ### About Dialog
 Both GUIs use the same custom About dialog: a dark 360-by-150-pixel window with the author line, clickable soft-blue **GitHub Account** link, and **Close** button. A 72-by-72 circular crop of `Picture/14187194.png` appears at the left. The image is loaded relative to the application script; if it is missing or unreadable, the app reports the failure in an error dialog. The crop and display are provided by Pillow.

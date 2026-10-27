@@ -1,3 +1,9 @@
+# Created by Daniel Morvay
+# GitHub URL: https://github.com/morvayd/
+
+# Debian/Ubuntu system Python may need Tkinter and Pillow's Tk support:
+#   sudo apt install python3-tk python3-pil.imagetk
+
 from contextlib import redirect_stderr, redirect_stdout
 import os
 import tkinter as tk
@@ -7,7 +13,7 @@ import queue
 import logging
 import sqlite3
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import webbrowser
 import pandas as pd
 from PIL import Image, ImageDraw, ImageOps, ImageTk
@@ -32,6 +38,14 @@ def connect_to_database(db_path):
 def get_default_scan_folder():
     """Return the current user's Documents directory."""
     return str(Path.home() / "Documents")
+
+
+def _path_to_corpus(path):
+    """Convert native path separators and punctuation into searchable spaces."""
+    for separator in (os.sep, os.altsep):
+        if separator:
+            path = path.replace(separator, " ")
+    return path.replace("-", " ").replace(".", " ")
 
 
 def init_database(db_path):
@@ -184,7 +198,7 @@ def perform_scan(folder_path, inaccessible_directories=None):
                 "FilePath": os.path.dirname(root),
                 "FileName": os.path.basename(root),
                 "CompleteFile": root,
-                "corpus": root.replace("/", " ").replace("-", " ").replace(".", " "),
+                "corpus": _path_to_corpus(root),
                 "IsDirectory": 1,
                 "Extension": "",
                 "Size": stat.st_size,
@@ -205,7 +219,7 @@ def perform_scan(folder_path, inaccessible_directories=None):
                 "FilePath": root,
                 "FileName": file_name,
                 "CompleteFile": complete_file,
-                "corpus": complete_file.replace("/", " ").replace("-", " ").replace(".", " ").replace("_", " "),
+                "corpus": _path_to_corpus(complete_file).replace("_", " "),
                 "IsDirectory": 0,
                 "Extension": os.path.splitext(file_name)[1].lower(),
                 "Size": stat.st_size,
@@ -564,6 +578,8 @@ class FileScannerGUI:
     def _browse_folder(self):
         folder = filedialog.askdirectory()
         if folder:
+            if os.name == "nt":
+                folder = str(PureWindowsPath(folder))
             self.path_entry.delete(0, tk.END)
             self.path_entry.insert(0, folder)
 
